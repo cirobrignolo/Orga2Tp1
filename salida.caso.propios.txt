@@ -1,0 +1,6 @@
+==> listAddFirst==> listAddLast==> listAdd[PRIMERO,00,aa,bb,dd,ff,ULTIMO]
+[ULTIMO,ff,dd,bb,aa,00,PRIMERO]
+[00,PRIMERO,ULTIMO,aa,bb,dd,ff]
+[ff,dd,bb,aa,ULTIMO,PRIMERO,00]
+==> listRemove[00,ff]
+[ULTIMO,ff,00]

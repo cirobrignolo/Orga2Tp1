@@ -3,37 +3,67 @@
 /** STRING **/
 
 char* strRange(char* a, uint32_t i, uint32_t f) {
-	uint32_t len = 0;
-	char* null? = a;
-	while (a != null) {
-		len++;
-		a = a->next
-	}
-	if (i>f) {
-		return a;
+	uint32_t len = strLen(a);
+	if (i > f) {
+		i=0;
+		f=len;
 	} else if (i > len){
-		return null;
+		i = f;
 	} else if (f > len) {
 		f = len;
-	} else {
-		char* res = null;
-		uint32_t j = 0;
-		while (j < i) {
-			a = a->next;
-		}
-		while (j <= f);
-		res->dato = a->dato;
-		res->next = a->next;
-		a = a->next;
 	}
-    return res;
+	len = f-i;
+	len += 2; //f  es inclusive entonce (f+1) + i + 1 para el 0
+	char* result = malloc(len);
+	int c = 0;
+	for (uint32_t j=i; j <= f; j++)
+	{
+		*(result + c) = *(a +  j);
+		c++;
+	}
+	*(result + c) = 0;
+	free (a);
+	return result;
 }
 
 /** Lista **/
 
 void listPrintReverse(list_t* l, FILE *pFile, funcPrint_t* fp) {
+	char* corcheteAbierto = "["; 
+	char* corcheteCerrado = "]"; 
+	char* coma = ",";
 
+    if (fp != 0){
+        (*fp)(corcheteAbierto, pFile);
+    } else {
+        fprintf(pFile, "%s", corcheteAbierto);
+    }
+
+    struct s_listElem* nodo = l->last;
+    while (nodo){
+        struct s_listElem* anterior = nodo->prev;
+        if (fp != 0){
+        	(*fp)(nodo->data, pFile);
+    	} else {
+        	fprintf(pFile, "%p", nodo->data);
+    	}
+        if (anterior != NULL){
+        	if (fp){
+                (*fp)(coma, pFile);
+            }else{
+                fprintf(pFile, "%s", coma);
+            }
+        }
+        nodo = anterior; 
+    }
+    
+    if (fp != 0){
+        (*fp)(corcheteCerrado, pFile);
+    } else {
+        fprintf(pFile, "%s", corcheteCerrado);
+    }
 }
+
 
 /** n3tree **/
 
