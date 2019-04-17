@@ -24,6 +24,7 @@ section .data
 %define off_tree_elem_left 8
 %define off_tree_elem_center 16
 %define off_tree_elem_right 24
+
 ; Size Struct
 
 %define size_list 16
@@ -663,7 +664,8 @@ n3treeNew:
     pop rbp
     ret
 
-n3treeAdd:
+n3treeAdd:  ;en esta funcion y en todas las que siguen de arboles, no funcina bien no? 
+            ;porque llamo recursion pero el unico tree_first es el de el inicio de arbol, no el de todos los arboles hijos
     push rbp
     mov rbp, rsp
     push r12
@@ -702,7 +704,7 @@ n3treeAdd:
     mov rdi, [r15 + off_tree_elem_right]
     mov rsi, r13
     mov rdx, r14
-    call n3treeAdd ;necesito popear todo antes??
+    call n3treeAdd
     jmp .fin
 
     .leftTree:
@@ -727,12 +729,80 @@ n3treeAdd:
     ret
 
 n3treeRemoveEq:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    push r14
+    sub rsp, 8
+    mov r12, rdi
+    mov r13, rsi
+
+    mov r8, [r12 + off_tree_first]
+    mov r14, [r8]
+
+    cmp r15, NULL
+    je .fin
+
+    mov rdi, [r14 + off_tree_elem_data]
+    call r13 ;o tengo que ir dato a dato eliminandolo?
+
+    mov rdi, [r14 + off_tree_elem_right]
+    mov rsi, r13
+    call n3treeRemoveEq
+    mov rdi, [r14 + off_tree_elem_left]
+    mov rsi, r13
+    call n3treeRemoveEq
+
+    .fin:
+    add rsp, 8
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
     ret
 
 n3treeDelete:
     ret
 
 nTableNew:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    mov r12, rdi
+    xor r13, r13
+
+    .multiplicacion:
+    cmp r12, 0
+    je .malloc
+    add r13, 8
+    dec r12
+    jmp .multiplicacion
+
+    .malloc:
+    mov r12, rdi ;recupero el tamaño de la lista
+    mov rdi, r13
+    call malloc
+    xor r8, r8
+    mov r8, r12 ;uso r8 como iterador
+    mov r12, rax
+    mov r13, rax ;este lo voy a usar para devolver la tabla
+
+    .ciclo:
+    cmp r8, 0
+    je .fin
+    mov qword rdi, [r12]
+    call listNew
+    inc r12
+    dec r8
+    jmp .ciclo
+
+    .fin:
+    mov rax, r13
+    pop r13
+    pop r12
+    pop rbp
     ret
 
 nTableAdd:
