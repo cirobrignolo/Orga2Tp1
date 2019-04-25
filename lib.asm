@@ -25,12 +25,15 @@ section .data
 %define off_tree_elem_center 16
 %define off_tree_elem_right 24
 
+%define off_table_list 0
+%define off_table_size 8
+
 ; Size Struct
 
 %define size_list 16
 %define size_elem 24
 %define size_tree 8
-%define size_tree_elem 32
+%define size_tree_elem 32 
 
 %define NULL 0
 
@@ -264,8 +267,8 @@ listNew:
     mov rdi, size_list
     call malloc
  
-    mov qword [rax + off_list_first], NULL
-    mov qword [rax + off_list_last], NULL
+    mov qword [rax + off_list_first], 0
+    mov qword [rax + off_list_last], 0
 
     pop rbp
     ret
@@ -281,25 +284,27 @@ listAddFirst:
     mov rdi, size_elem
     call malloc ;rax = nuevo elem
 
-    mov [rax + off_elem_data], r13 ;el puntero al valor apunta al indicado
-
+    xor r8, r8
     mov r8, [r12 + off_list_first]
-    cmp r8, NULL                     ;comparo si el primero es null
-    jne .firstNotNull
+    cmp r8, 0                     ;comparo si el primero es null
+    je .firstNull
 
     xor r8, r8
-    mov r8, [r12 + off_list_first]       ;r8 es el primer elem de la lista antes de agregar el nuevo
-    mov [rax + off_elem_next], r8        ;el elemento que agregue apunta al siguiente (antes primero)
-    mov [r12 + off_list_last], rax        ;el puntero al ultimo apunta al ultimo elemento
-    mov qword[rax + off_elem_prev], NULL      ;el primer elemnto apunta a NULL en el puntero al previo
-    mov [r12 + off_list_first], rax      ;el puntero al primer elemento apunta al nuevo elemento
-    jmp .fin
-
-    .firstNotNull:
+    mov [rax + off_elem_data], r13 ;el puntero al valor apunta al indicado
     mov r8, [r12 + off_list_first]       ;r8 es el primer elem de la lista antes de agregar el nuevo
     mov [rax + off_elem_next], r8        ;el elemento que agregue apunta al siguiente (antes primero)
     mov [r8 + off_elem_prev], rax        ;el segundo elemento apunta al primero
-    mov qword[rax + off_elem_prev], NULL      ;el primer elemnto apunta a NULL en el puntero al previo
+    mov qword[rax + off_elem_prev], 0      ;el primer elemnto apunta a NULL en el puntero al previo
+    mov [r12 + off_list_first], rax      ;el puntero al primer elemento apunta al nuevo element
+    jmp .fin
+
+    .firstNull:
+    xor r8, r8
+    mov [rax + off_elem_data], r13 ;el puntero al valor apunta al indicado
+    mov r8, [r12 + off_list_first]       ;r8 es el primer elem de la lista antes de agregar el nuevo
+    mov [rax + off_elem_next], r8        ;el elemento que agregue apunta al siguiente (antes primero)
+    mov [r12 + off_list_last], rax        ;el puntero al ultimo apunta al ultimo elemento
+    mov qword[rax + off_elem_prev], 0      ;el primer elemnto apunta a NULL en el puntero al previo
     mov [r12 + off_list_first], rax      ;el puntero al primer elemento apunta al nuevo elemento
 
     .fin:
@@ -323,14 +328,14 @@ listAddLast:
     mov [rax + off_elem_data], r13 ;el puntero al valor apunta al indicado
 
     mov r8, [r12 + off_list_last]
-    cmp r8, NULL                     ;comparo si el ultimo es null
+    cmp r8, 0                     ;comparo si el ultimo es null
     jne .lastNotNull
 
     xor r8, r8
     mov r8, [r12 + off_list_last]        ;r8 es el ultimo elem de la lista antes de agregar el nuevo
     mov [rax + off_elem_prev], r8        ;el elemento que agregue apunta al anterior (antes primero)
     mov [r12 + off_list_first], rax       ;el puntero al primero apunta al ultimo elemento
-    mov qword[rax + off_elem_next], NULL      ;el ultimo elemnto apunta a NULL en el puntero al siguiente
+    mov qword[rax + off_elem_next], 0      ;el ultimo elemnto apunta a NULL en el puntero al siguiente
     mov [r12 + off_list_last], rax       ;el puntero al ultimo elemento apunta al nuevo elemento
     jmp .fin
 
@@ -338,7 +343,7 @@ listAddLast:
     mov r8, [r12 + off_list_last]        ;r8 es el ultimo elem de la lista antes de agregar el nuevo
     mov [rax + off_elem_prev], r8        ;el elemento que agregue apunta al anterior (antes primero)
     mov [r8 + off_elem_next], rax        ;el ultimo elemento apunta al nuevo ultimo
-    mov qword[rax + off_elem_next], NULL      ;el ultimo elemnto apunta a NULL en el puntero al siguiente
+    mov qword[rax + off_elem_next], 0      ;el ultimo elemnto apunta a NULL en el puntero al siguiente
     mov [r12 + off_list_last], rax       ;el puntero al ultimo elemento apunta al nuevo elemento
 
     .fin:
@@ -357,7 +362,7 @@ listAdd:
         push r14
         push r15
         sub rsp, 8
-        mov rbx, rdi 
+        mov rbx, rdi
         mov r12, rsi 
         mov r15, rdx    
         mov r13, [rbx + off_list_first] 
@@ -419,10 +424,10 @@ listRemove:
     push r15
     push rbx
     sub rsp, 8
-    mov r12, rdi
-    mov r13, rsi
-    mov r14, rdx
-    mov rbx, rcx
+    mov r12, rdi                ;lista
+    mov r13, rsi                ;data
+    mov r14, rdx                ;cmp
+    mov rbx, rcx                ;delete
     mov r15, [r12 + off_list_first]
     cmp r15, 0
     je .fin
@@ -448,7 +453,7 @@ listRemove:
         mov [r12 + off_list_first], r9
         cmp r9, 0
         je .unicoElem
-        mov qword [r9 + off_elem_prev], NULL
+        mov qword [r9 + off_elem_prev], 0
         mov r15, r9
         jmp .primerElem
 
@@ -464,7 +469,7 @@ listRemove:
         jmp .ciclo
 
     .eliminar:
-        cmp qword [r15 + off_elem_next], NULL
+        cmp qword [r15 + off_elem_next], 0
         je .eliminarUltimo
         xor r8, r8
         xor r9, r9
@@ -484,11 +489,12 @@ listRemove:
     .eliminarUltimo:
         xor r8, r8
         mov r8, [r15 + off_elem_prev]
-        mov qword [r8 + off_elem_next], NULL
+        mov qword [r8 + off_elem_next], 0
         mov rdi, [r15 + off_elem_data]
         call rbx
         mov rdi, r15
         call free
+        mov [r12 + off_list_last], r8
         jmp .fin
 
     .unicoElem:
@@ -530,6 +536,7 @@ listRemoveFirst:
     call r14
     mov rdi, r13
     call free
+    mov qword [r8 + off_elem_prev], 0
 
     .fin:
         mov rax, r12
@@ -565,6 +572,7 @@ listRemoveLast:
     call r14
     mov rdi, r13
     call free
+    mov qword [r8 + off_elem_next], 0
 
     .fin:
         mov rax, r12
@@ -574,6 +582,7 @@ listRemoveLast:
         pop r12
         pop rbp
         ret
+
 listDelete:
     push rbp
     mov rbp, rsp
@@ -587,7 +596,7 @@ listDelete:
     mov r13, [r12 + off_list_first]
 
     .ciclo:
-        cmp r13, NULL
+        cmp r13, 0
         je .fin
 
         mov rdi, [r13]
@@ -624,7 +633,7 @@ listPrint:
     call fprintf
 
     mov r14, [r12 + off_list_first]
-    cmp qword r14, NULL
+    cmp qword r14, 0
     je .fin
 
     .ciclo:
@@ -633,7 +642,7 @@ listPrint:
         call r15
 
         mov r14, [r14 + off_elem_next]
-        cmp qword r14, NULL
+        cmp qword r14, 0
         je .fin
 
         mov rdi, r13
@@ -659,68 +668,76 @@ n3treeNew:
     mov rdi, size_tree
     call malloc
 
-    mov qword [rax + off_tree_first], NULL
+    mov qword [rax + off_tree_first], 0
 
     pop rbp
     ret
 
-n3treeAdd:  ;en esta funcion y en todas las que siguen de arboles, no funcina bien no? 
-            ;porque llamo recursion pero el unico tree_first es el de el inicio de arbol, no el de todos los arboles hijos
-    push rbp
+n3treeAdd:
+    push rbp ;ALINEADA
     mov rbp, rsp
-    push r12
-    push r13
-    push r14
+    push r12 ; DESALINEADA
+    push r13 ; ALINEADA
+    push r14 ; DESALINEADA
     push r15
-    mov r12, rdi
-    mov r13, rsi
-    mov r14, rdx
+    push rbx
+    sub rsp, 8
 
-    mov r8, [r12 + off_tree_first]
-    mov r15, [r8]
+    mov r15, rdi
+    mov r12, [rdi + off_tree_first] ; ptro al n3tree
+    mov r13, rsi ; dato 
+    xor r14, r14 ; siguiente
+    mov rbx, rdx
+    .ciclo:
+        cmp r12, 0 ; si apunta a NULL creamos un nuevo nodo
+        je .agregar
+                        ; si no comparamos hasta encontrar su ubicacion
+        mov rdi, r13 ; data 
+        mov rsi, [r12 + off_tree_elem_data] ; n3_data
+        call rbx ; llamo a fc 
+        cmp eax, 0 ; si data > n3_data esto da -1 
+        je .iguales
+        jg .menor
 
-    cmp r15, NULL
-    jne .notNULL
+        ;mayor
+        lea r14, [r12 + off_tree_elem_right]
+        jmp .avanzar
 
-    ; puntero al arbol vacio
-    mov rdi, size_tree_elem
-    call malloc
+        .menor:
+            lea r14, [r12 + off_tree_elem_left]
 
-    mov qword [rax + off_tree_elem_data], r13
-    mov qword [rax + off_tree_elem_left], NULL
-    mov qword [rax + off_tree_elem_center], NULL
-    mov qword [rax + off_tree_elem_right], NULL
-    mov [r15], rax
+        .avanzar:
+            mov r12, [r14]
+            mov r15, r14
+            jmp .ciclo
 
-    call listNew
-    mov qword [r15 + off_tree_elem_center], rax
-    ;aca ya me tengo que ir a .fin??
+        .agregar: 
+            mov rdi, size_tree_elem
+            call malloc
+            
 
-    .notNULL:
-    mov r8, [r15 + off_tree_elem_data]
-    cmp r8, r13
-    je .insert
-    jg .leftTree
-    mov rdi, [r15 + off_tree_elem_right]
-    mov rsi, r13
-    mov rdx, r14
-    call n3treeAdd
-    jmp .fin
+            mov [r15], rax ; asigno la direccion del nuevo elem del n3tree
+            mov [rax + off_tree_elem_data], r13
+            mov qword [rax + off_tree_elem_left], 0
+    
+            mov qword [rax + off_tree_elem_right], 0
+            mov r12 , rax ;modifica antes mov r8 , rax
+            call listNew
+            mov qword [r12 + off_tree_elem_center], rax
+            jmp .fin
 
-    .leftTree:
-    mov rdi, [r15 + off_tree_elem_left]
-    mov rsi, r13
-    mov rdx, r14
-    call n3treeAdd
-    jmp .fin
-
-    .insert:
-    mov rdi, [r15 + off_tree_elem_center]
-    mov rsi, r13
-    mov rdx, r14
-    call listAdd
+        .iguales:
+            mov r14, [r12 + off_tree_elem_center]
+            ;mov r12, [r14]
+            mov rdi, r14    
+            mov rsi, r13
+            call listAddFirst
+            ;mov rax, [r14]
+            jmp .fin
 
     .fin:
+    add rsp , 8
+    pop rbx
     pop r15
     pop r14
     pop r13
@@ -728,7 +745,56 @@ n3treeAdd:  ;en esta funcion y en todas las que siguen de arboles, no funcina bi
     pop rbp
     ret
 
-n3treeRemoveEq:
+n3treeRemoveEqAux:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    mov r12, rdi
+    mov r13, rsi
+    cmp r12, 0
+    je .fin
+
+    ;recorro como si fuera el print
+    mov rdi, [r12 + off_tree_elem_left]
+    mov rsi, r13
+    call n3treeRemoveEqAux
+
+    mov rdi, [r12 + off_tree_elem_center]
+    mov rsi, r13
+    call listDelete
+    call listNew
+    mov [r12 + off_tree_elem_center], rax
+
+    mov rdi, [r12 + off_tree_elem_right]
+    mov rsi, r13
+    call n3treeRemoveEqAux
+
+    .fin:
+    pop r13
+    pop r12
+    pop rbp
+    ret
+
+n3treeRemoveEq:    
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    mov r12, rdi
+    mov r13, [r12 + off_tree_first]
+    cmp r12, 0
+    je .fin
+    mov rdi, r13
+    call n3treeRemoveEqAux
+
+    .fin:
+    pop r13
+    pop r12
+    pop rbp
+    ret
+
+n3treeDeleteAux:
     push rbp
     mov rbp, rsp
     push r12
@@ -737,22 +803,25 @@ n3treeRemoveEq:
     sub rsp, 8
     mov r12, rdi
     mov r13, rsi
-
-    mov r8, [r12 + off_tree_first]
-    mov r14, [r8]
-
-    cmp r15, NULL
+    cmp r12, 0
     je .fin
 
-    mov rdi, [r14 + off_tree_elem_data]
-    call r13 ;o tengo que ir dato a dato eliminandolo?
+    ;recorro como si fuera el print
+    mov rdi, [r12 + off_tree_elem_left]
+    mov rsi, r13
+    call n3treeDeleteAux
 
-    mov rdi, [r14 + off_tree_elem_right]
+    mov rdi, [r12 + off_tree_elem_center]
+    call r13
+    mov rdi, [r12 + off_tree_elem_data]
+    call r13
+    mov r14, [r12 + off_tree_elem_right]
+    mov rdi, r12
+    call free
+
+    mov rdi, r14
     mov rsi, r13
-    call n3treeRemoveEq
-    mov rdi, [r14 + off_tree_elem_left]
-    mov rsi, r13
-    call n3treeRemoveEq
+    call n3treeDeleteAux
 
     .fin:
     add rsp, 8
@@ -763,49 +832,104 @@ n3treeRemoveEq:
     ret
 
 n3treeDelete:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    mov r12, rdi
+    mov r13, [r12 + off_tree_first]
+    cmp r12, 0
+    je .fin
+    mov rdi, r13
+    call n3treeDeleteAux
+
+    .fin:
+    mov rdi, r12
+    call free
+    pop r13
+    pop r12
+    pop rbp
     ret
 
 nTableNew:
     push rbp
     mov rbp, rsp
     push r12
-    push r13
-    mov r12, rdi
-    xor r13, r13
+    push r13 
+    push r14
+    sub rsp, 8 
+    xor r12, r12
+    mov r12d, edi
 
-    .multiplicacion:
-    cmp r12, 0
-    je .malloc
-    add r13, 8
-    dec r12
-    jmp .multiplicacion
-
-    .malloc:
-    mov r12, rdi ;recupero el tamaño de la lista
-    mov rdi, r13
+    mov rdi, 16
     call malloc
-    xor r8, r8
-    mov r8, r12 ;uso r8 como iterador
-    mov r12, rax
-    mov r13, rax ;este lo voy a usar para devolver la tabla
+    mov r14, rax
+    mov dword [r14 + off_table_size], r12d
+
+    shl r12d, 3
+    mov rdi, r12
+    call malloc
+    mov [r14 + off_table_list], rax
+
+    mov r13, rax
+    sub r12d, 8
+    add r12, r13
 
     .ciclo:
-    cmp r8, 0
-    je .fin
-    mov qword rdi, [r12]
+    cmp r13d, r12d
+    jg .fin 
     call listNew
-    inc r12
-    dec r8
+    mov [r13], rax
+    lea r13d, [r13d + 8]
     jmp .ciclo
 
     .fin:
-    mov rax, r13
+    mov rax, r14
+    add rsp, 8
+    pop r14
     pop r13
     pop r12
     pop rbp
     ret
 
 nTableAdd:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    push r14
+    push r15
+    mov r12, [rdi]
+    xor r13, r13
+    mov r13, rsi
+    mov r14, rdx
+    mov r15, rcx
+    xor r8, r8
+    mov r8, [r12 + off_table_size]
+
+    .modulo:
+    cmp r13, r8
+    jl .agregar
+    jg .resta
+    mov r13, 0
+    jmp .agregar
+
+    .resta:
+    sub r13, r8
+    jmp .modulo
+
+    .agregar:
+    mov r12, [r12 + off_table_list]
+    lea r12, [r12 + r13*8]
+    mov rdi, r12
+    mov rsi, r14
+    call listAddFirst
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
     ret
     
 nTableRemoveSlot:
