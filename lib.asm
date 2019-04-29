@@ -292,7 +292,7 @@ listAddFirst:
     xor r8, r8
     mov [rax + off_elem_data], r13 ;el puntero al valor apunta al indicado
     mov r8, [r12 + off_list_first]       ;r8 es el primer elem de la lista antes de agregar el nuevo
-    mov [rax + off_elem_next], r8        ;el elemento que agregue apunta al siguiente (antes primero)
+    mov [rax + off_elem_next], r8        ;el elemento que agregue apunta al r14 (antes primero)
     mov [r8 + off_elem_prev], rax        ;el segundo elemento apunta al primero
     mov qword[rax + off_elem_prev], 0      ;el primer elemnto apunta a NULL en el puntero al previo
     mov [r12 + off_list_first], rax      ;el puntero al primer elemento apunta al nuevo element
@@ -302,7 +302,7 @@ listAddFirst:
     xor r8, r8
     mov [rax + off_elem_data], r13 ;el puntero al valor apunta al indicado
     mov r8, [r12 + off_list_first]       ;r8 es el primer elem de la lista antes de agregar el nuevo
-    mov [rax + off_elem_next], r8        ;el elemento que agregue apunta al siguiente (antes primero)
+    mov [rax + off_elem_next], r8        ;el elemento que agregue apunta al r14 (antes primero)
     mov [r12 + off_list_last], rax        ;el puntero al ultimo apunta al ultimo elemento
     mov qword[rax + off_elem_prev], 0      ;el primer elemnto apunta a NULL en el puntero al previo
     mov [r12 + off_list_first], rax      ;el puntero al primer elemento apunta al nuevo elemento
@@ -335,7 +335,7 @@ listAddLast:
     mov r8, [r12 + off_list_last]        ;r8 es el ultimo elem de la lista antes de agregar el nuevo
     mov [rax + off_elem_prev], r8        ;el elemento que agregue apunta al anterior (antes primero)
     mov [r12 + off_list_first], rax       ;el puntero al primero apunta al ultimo elemento
-    mov qword[rax + off_elem_next], 0      ;el ultimo elemnto apunta a NULL en el puntero al siguiente
+    mov qword[rax + off_elem_next], 0      ;el ultimo elemnto apunta a NULL en el puntero al r14
     mov [r12 + off_list_last], rax       ;el puntero al ultimo elemento apunta al nuevo elemento
     jmp .fin
 
@@ -343,7 +343,7 @@ listAddLast:
     mov r8, [r12 + off_list_last]        ;r8 es el ultimo elem de la lista antes de agregar el nuevo
     mov [rax + off_elem_prev], r8        ;el elemento que agregue apunta al anterior (antes primero)
     mov [r8 + off_elem_next], rax        ;el ultimo elemento apunta al nuevo ultimo
-    mov qword[rax + off_elem_next], 0      ;el ultimo elemnto apunta a NULL en el puntero al siguiente
+    mov qword[rax + off_elem_next], 0      ;el ultimo elemnto apunta a NULL en el puntero al r14
     mov [r12 + off_list_last], rax       ;el puntero al ultimo elemento apunta al nuevo elemento
 
     .fin:
@@ -355,65 +355,72 @@ listAddLast:
 
 listAdd:
     push rbp
-        mov rbp, rsp
-        push rbx 
-        push r12
-        push r13
-        push r14
-        push r15
-        sub rsp, 8
-        mov rbx, rdi
-        mov r12, rsi 
-        mov r15, rdx    
-        mov r13, [rbx + off_list_first] 
-        cmp r13, 0 
-        je .set_as_first
-        mov rdi, r12 
-        mov rsi, [r13 + off_elem_data]
-        call r15 
-        cmp eax, 1 ;a < b?
-        je .set_as_first 
-        mov r14, [r13 + off_elem_next]    
+    mov rbp, rsp
+    push rbx 
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
+    mov rbx, rdi
+    mov r12, rsi 
+    mov r15, rdx    
+    mov r13, [rbx + off_list_first] 
+    cmp r13, 0 
+    je .set_as_first
+    mov rdi, r12 
+    mov rsi, [r13 + off_elem_data]
+    call r15 
+    cmp eax, 1 ;a < b?
+    je .set_as_first 
+    mov r14, [r13 + off_elem_next]    
+
     .ciclo:
-        cmp r14, 0 
-        je .set_as_last
-        mov rdi, r12
-        mov rsi, [r14 + off_elem_data]
-        call r15
-        cmp eax, 1
-        je .a_is_less
-        mov r13, [r13 + off_elem_next]
-        mov r14, [r13 + off_elem_next]
-        jmp .ciclo 
+    cmp r14, 0 
+    je .set_as_last
+    mov rdi, r12
+    mov rsi, [r14 + off_elem_data]
+    call r15
+    cmp eax, 1
+    je .a_is_less
+    mov r13, [r13 + off_elem_next]
+    mov r14, [r13 + off_elem_next]
+    jmp .ciclo 
+
     .a_is_less: 
-        mov rdi, size_elem
-        call malloc
-        mov [rax + off_elem_data], r12 
-        mov QWORD [rax + off_elem_next], 0
-        mov r12, rax 
-        mov [r13 + off_elem_next], r12 
-        mov [r12 + off_elem_next], r14 
-        jmp .fin
+    mov rdi, size_elem
+    call malloc
+    mov [rax + off_elem_data], r12 
+    mov QWORD [rax + off_elem_next], 0
+    mov r12, rax 
+    mov [r13 + off_elem_next], r12 
+    mov [r12 + off_elem_next], r14 
+    mov [r12 + off_elem_prev], r13
+    mov [r14 + off_elem_prev], r12
+    jmp .fin
+
     .set_as_first:
-        mov rdi, rbx 
-        mov rsi, r12 
-        call listAddFirst
-        jmp .fin
+    mov rdi, rbx 
+    mov rsi, r12 
+    call listAddFirst
+    jmp .fin
+
     .set_as_last:
-        mov rdi, rbx
-        mov rsi, r12
-        call listAddLast
-        jmp .fin
+    mov rdi, rbx
+    mov rsi, r12
+    call listAddLast
+    jmp .fin
+
     .fin:
-        mov rax, rbx 
-        add rsp, 8
-        pop r15
-        pop r14
-        pop r13
-        pop r12
-        pop rbx
-        pop rbp    
-        ret
+    mov rax, rbx 
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp    
+    ret
 
 listRemove:
     push rbp
@@ -433,83 +440,83 @@ listRemove:
     je .fin
 
     .primerElem:
-        mov rdi, [r15 + off_elem_data]
-        mov rsi, r13
-        call r14
-        cmp rax, 0
-        je .eliminarPrimero
-        mov r9, r15                                     ;r9 es el elemento anterior al que veo
-        mov r15, [r15 + off_elem_next]
-        cmp r15, 0
-        je .fin
-        jmp .ciclo
+    mov rdi, [r15 + off_elem_data]
+    mov rsi, r13
+    call r14
+    cmp rax, 0
+    je .eliminarPrimero
+    mov r9, r15                                     ;r9 es el elemento anterior al que veo
+    mov r15, [r15 + off_elem_next]
+    cmp r15, 0
+    je .fin
+    jmp .ciclo
 
     .eliminarPrimero:
-        mov r9, [r15 + off_elem_next]
-        mov rdi, [r15 + off_elem_data]
-        call rbx
-        mov rdi, r15
-        call free
-        mov [r12 + off_list_first], r9
-        cmp r9, 0
-        je .unicoElem
-        mov qword [r9 + off_elem_prev], 0
-        mov r15, r9
-        jmp .primerElem
+    mov r9, [r15 + off_elem_next]
+    mov rdi, [r15 + off_elem_data]
+    call rbx
+    mov rdi, r15
+    call free
+    mov [r12 + off_list_first], r9
+    cmp r9, 0
+    je .unicoElem
+    mov qword [r9 + off_elem_prev], 0
+    mov r15, r9
+    jmp .primerElem
 
     .ciclo:
-        mov rdi, [r15 + off_elem_data]
-        mov rsi, r13
-        call r14
-        cmp rax, 0
-        je .eliminar
-        mov r15, [r15 + off_elem_next]
-        cmp r15, 0
-        je .fin
-        jmp .ciclo
+    mov rdi, [r15 + off_elem_data]
+    mov rsi, r13
+    call r14
+    cmp rax, 0
+    je .eliminar
+    mov r15, [r15 + off_elem_next]
+    cmp r15, 0
+    je .fin
+    jmp .ciclo
 
     .eliminar:
-        cmp qword [r15 + off_elem_next], 0
-        je .eliminarUltimo
-        xor r8, r8
-        xor r9, r9
-        mov r9, [r15 + off_elem_prev]
-        mov r8, [r15 + off_elem_next]
-        mov [r9 + off_elem_next], r8
-        mov [r8 + off_elem_prev], r9
-        mov rdi, [r15 + off_elem_data]
-        call rbx
-        mov rdi, r15
-        mov r15, [r15 + off_elem_next]
-        call free
-        cmp r15, 0
-        je .fin
-        jmp .ciclo
+    cmp qword [r15 + off_elem_next], 0
+    je .eliminarUltimo
+    xor r8, r8
+    xor r9, r9
+    mov r9, [r15 + off_elem_prev]
+    mov r8, [r15 + off_elem_next]
+    mov [r9 + off_elem_next], r8
+    mov [r8 + off_elem_prev], r9
+    mov rdi, [r15 + off_elem_data]
+    call rbx
+    mov rdi, r15
+    mov r15, [r15 + off_elem_next]
+    call free
+    cmp r15, 0
+    je .fin
+    jmp .ciclo
 
     .eliminarUltimo:
-        xor r8, r8
-        mov r8, [r15 + off_elem_prev]
-        mov qword [r8 + off_elem_next], 0
-        mov rdi, [r15 + off_elem_data]
-        call rbx
-        mov rdi, r15
-        call free
-        mov [r12 + off_list_last], r8
-        jmp .fin
+    xor r8, r8
+    mov r8, [r15 + off_elem_prev]
+    mov qword [r8 + off_elem_next], 0
+    mov rdi, [r15 + off_elem_data]
+    call rbx
+    mov rdi, r15
+    call free
+    mov [r12 + off_list_last], r8
+    jmp .fin
 
     .unicoElem:
-        mov [r12 + off_list_last], r9
+    mov [r12 + off_list_last], r9
 
     .fin:
-        mov rax, r12
-        add rsp, 8
-        pop rbx
-        pop r15
-        pop r14
-        pop r13
-        pop r12
-        pop rbp
-        ret
+    mov rax, r12
+    add rsp, 8
+    pop rbx
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    ret
 
 listRemoveFirst:
     push rbp
@@ -517,7 +524,7 @@ listRemoveFirst:
     push r12
     push r13
     push r14
-    sub rsp, 8
+    push r15
     mov r12, rdi
     mov r14, rsi
 
@@ -525,22 +532,27 @@ listRemoveFirst:
     cmp r13, 0
     je .fin
 
-    mov r8, [r13 + off_elem_next]
-    mov [r12 + off_list_first], r8
-    cmp r8, 0
-    jne .twoOrMoreElem
-    mov [r12 + off_list_last], r8
-
-    .twoOrMoreElem:
+    mov r15, [r13 + off_elem_next]
+    mov [r12 + off_list_first], r15
+    cmp r15, 0
+    je .1Elem
+    mov qword [r15 + off_elem_prev], 0
     mov rdi, [r13 + off_elem_data]
     call r14
     mov rdi, r13
     call free
-    mov qword [r8 + off_elem_prev], 0
+    jmp .fin
+
+    .1Elem:
+    mov rdi, [r13 + off_elem_data]
+    call r14
+    mov rdi, r13
+    call free
+    mov qword [r12 + off_list_last], 0
 
     .fin:
         mov rax, r12
-        add rsp, 8
+        pop r15
         pop r14
         pop r13
         pop r12
@@ -598,16 +610,16 @@ listDelete:
     .ciclo:
         cmp r13, 0
         je .fin
-
-        mov rdi, [r13]
+        mov rdi, [r13 + off_elem_data]
         call r14
-
         mov rdi, r13
         mov r13, [r13 + off_elem_next]
+        mov [r12 + off_list_first], r13
         call free
         jmp .ciclo
 
     .fin:
+        mov qword [r12 + off_list_last], 0
         mov rdi, r12
         call free
         add rsp, 8
@@ -686,7 +698,7 @@ n3treeAdd:
     mov r15, rdi
     mov r12, [rdi + off_tree_first] ; ptro al n3tree
     mov r13, rsi ; dato 
-    xor r14, r14 ; siguiente
+    xor r14, r14 ; r14
     mov rbx, rdx
     .ciclo:
         cmp r12, 0 ; si apunta a NULL creamos un nuevo nodo
@@ -905,7 +917,7 @@ nTableAdd:
     mov r14, rdx
     mov r15, rcx
     xor r8, r8
-    mov r8, [r12 + off_table_size]
+    mov r8d, [rdi + off_table_size]
 
     .modulo:
     cmp r13, r8
@@ -919,11 +931,11 @@ nTableAdd:
     jmp .modulo
 
     .agregar:
-    mov r12, [r12 + off_table_list]
-    lea r12, [r12 + r13*8]
+    mov r12, [r12 + r13*8]
     mov rdi, r12
     mov rsi, r14
-    call listAddFirst
+    mov rdx, r15
+    call listAdd
 
     pop r15
     pop r14
@@ -933,10 +945,128 @@ nTableAdd:
     ret
     
 nTableRemoveSlot:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    push r14
+    push r15
+    push rbx
+    sub rsp, 8
+    mov r12, [rdi]
+    xor r13, r13
+    mov r13, rsi
+    mov r14, rdx
+    mov r15, rcx
+    mov rbx, r8
+    xor r9, r9
+    mov r9d, [rdi + off_table_size]
+
+     .modulo:
+    cmp r13, r9
+    jl .remove
+    jg .resta
+    mov r13, 0
+    jmp .remove
+
+    .resta:
+    sub r13, r9
+    jmp .modulo
+
+    .remove:
+    mov r12, [r12 + r13*8]
+    mov rdi, r12
+    ;mov rsi, r15
+    mov rsi, r14
+    mov rdx, r15
+    mov rcx, rbx
+    call listRemove
+
+    add rsp, 8
+    pop rbx
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
     ret
-    
+    ret
+
 nTableDeleteSlot:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    push r14
+    push r15
+    mov r12, [rdi]
+    xor r13, r13
+    mov r13, rsi
+    mov r14, rdx
+    xor r8, r8
+    mov r8d, [rdi + off_table_size]
+
+    .modulo:
+    cmp r13, r8
+    jl .delete
+    jg .resta
+    mov r13, 0
+    jmp .delete
+
+    .resta:
+    sub r13, r8
+    jmp .modulo
+
+    .delete:
+    lea r12, [r12 + r13*8]
+    mov rdi, [r12]
+    mov rsi, r14
+    call listDelete
+    call listNew
+    mov [r12], rax
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
     ret
 
 nTableDelete:
+    push rbp
+    mov rbp, rsp
+    push r12
+    push r13
+    push r14
+    push r15
+    push rbx
+    sub rsp, 8
+    mov r12, [rdi]
+    mov r13, rsi
+    mov rbx, rdi
+    xor r14, r14
+    xor r15, r15
+    mov r14d, [rdi + off_table_size]
+
+    .ciclo:
+    cmp r14d, r15d
+    je .fin
+    lea r12, [r12 + r13*8]
+    mov rdi, [r12]
+    mov rsi, r14
+    call listDelete
+    jmp .ciclo
+
+    .fin:
+    mov rdi, r12
+    call free
+    mov rdi, rbx
+    call free
+    add rsp, 8
+    pop rbx
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
     ret

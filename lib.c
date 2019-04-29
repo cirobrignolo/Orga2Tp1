@@ -203,13 +203,19 @@ void n3treePrint(n3tree_t* t, FILE *pFile,funcPrint_t* fp) {
 /** nTable **/
 
 void nTableRemoveAll(nTable_t* t, void* data, funcCmp_t* fc, funcDelete_t* fd) {
-
+	uint32_t i = 0;
+	while(i < t->size){
+		nTableRemoveSlot(t,i,data,fc,fd);
+		i++;
+	}
+	return;
 }
 
 void nTablePrint(nTable_t* t, FILE *pFile, funcPrint_t* fp) {
+	char* espacioIgual = " = ";
 	uint32_t i = 0;
 	while(i < t->size){
-		fprintf(pFile, "%d" "%s", i, " = ");
+		fprintf(pFile, "%d" "%s", i, espacioIgual);
 		listPrint(t->listArray[i], pFile, fp);
 		fprintf(pFile, "\n");
 		i++;
