@@ -1047,18 +1047,22 @@ nTableDelete:
     xor r14, r14
     xor r15, r15
     mov r14d, [rdi + off_table_size]
+    dec r14
 
     .ciclo:
-    cmp r14d, r15d
+    cmp r14, 0
     je .fin
-    lea r12, [r12 + r13*8]
+    mov r12, [rbx]
+    lea r12, [r12 + r15]
     mov rdi, [r12]
-    mov rsi, r14
+    mov rsi, r13
     call listDelete
+    dec r14
+    add r15, 8
     jmp .ciclo
 
     .fin:
-    mov rdi, r12
+    mov rdi, [rbx]
     call free
     mov rdi, rbx
     call free

@@ -17,25 +17,25 @@ void test_nTable(FILE *pfile) {
     nTable_t *n;
     // nTableAdd
     fprintf(pfile,"==> nTableAdd");
-    n = nTableNew(64);
-    for(int s=0;s<64;s++) {
+    n = nTableNew(2);
+    for(int s=0;s<2;s++) {
         for(int i=0;i<10;i++) {
             nTableAdd(n, s, strClone(strings[i]), (funcCmp_t*)&strCmp);}}
     // nTableRemoveSlot
-    for(int i=0;i<10;i++) {
+    fprintf(pfile,"==> nTableRemoveSlot");
+    for(int i=0;i<2;i++) {
         a = strClone(strings[i]);
         nTableRemoveSlot(n,i,a,(funcCmp_t*)&strCmp,(funcDelete_t*)&strDelete);
         strDelete(a);}
     // nTableRemoveAll
     fprintf(pfile,"==> nTableRemoveAll");
-    for(int i=5;i<10;i++) {
+    for(int i=0;i<2;i++) {
         a = strClone(strings[i]);
         nTableRemoveAll(n,a,(funcCmp_t*)&strCmp,(funcDelete_t*)&strDelete);
         strDelete(a);}
-        nTablePrint(n,pfile,(funcPrint_t*)&strPrint);
     // nTableDeleteSlot
     fprintf(pfile,"==> nTableDeleteSlot");
-    for(int i=0;i<64;i++) {
+    for(int i=0;i<0;i++) {
         nTableDeleteSlot(n,i,(funcDelete_t*)&strDelete);}
     nTablePrint(n,pfile,(funcPrint_t*)&strPrint);
     nTableDelete(n,(funcDelete_t*)&strDelete);
