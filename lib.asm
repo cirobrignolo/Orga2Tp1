@@ -165,69 +165,93 @@ strCmp:
     ret
 
 strConcat:
+    %define ptrA rbx
+    %define ptrB r12
+    %define lenA r13
+    %define lenB r14
+    %define lenC r15
+    %define ptrC rax
+    %define cont rcx
+
+    ; Estoy desalineado
     push rbp
     mov rbp, rsp
+    ; Me alineo
+    push rbx
     push r12
     push r13
     push r14
     push r15
-    push rbx
+    ; Me desalineo
     sub rsp, 8
-    mov rbx, rdi
-    mov r12, rsi
-    cmp byte [rbx], 0
-    jne .primeroNoVacio ;el caso en el que el primer *char es vacio por alguna razon no pasaba, pero cuando era el segudno *char vacio si pasa, entonces aca los doy vuelta.
-    mov r12, rdi
-    mov rbx, rsi
-    mov rdi, rbx
+    ; Me alineo
 
-    .primeroNoVacio:
+    mov ptrA, rdi
+    mov ptrB, rsi
+
+    ; Calculo lenA
     call strLen
-    mov r13d, eax
-    mov r14d, r13d
-    mov rdi, r12
+    mov lenA, rax
+
+    ; Calculo lenB
+    mov rdi, ptrB
     call strLen
-    add r13d, eax
-    inc r13d
-    mov edi, r13d
+    mov lenB, rax
+
+    mov lenC, lenA
+    add lenC, lenB
+    mov rdi, lenC
+    inc rdi
     call malloc
-    xor r8, r8
-    mov r8d, r14d
-    mov r14, rax
-    mov r15, r14
-    mov ecx, r8d
 
-    .ciclo1:
-    mov r9b, [rbx]
-    mov [r14], r9b
-    inc rbx
-    inc r14
-    loop .ciclo1
-
-    sub r13d, r8d
-    mov ecx, r13d
-
-    .ciclo2:
-    mov r9b, [r12]
-    mov [r14], r9b
-    inc r12
-    inc r14
-    loop .ciclo2
-    sub ebx, r8d
-    mov rdi, rbx
-    call strDelete
-    sub r12d, r13d
-    mov rdi, r12
-    call strDelete
-    mov rax, r15
-    add rsp, 8
-    pop rbx
-    pop r15
-    pop r14
-    pop r13
-    pop r12
-    pop rbp
-    ret    
+    mov cont, 0
+    .cicloConcatA:
+        mov byte dl, [ptrA + cont]
+        cmp dl, 0
+        je .finCicloConcatA
+        mov byte dl, [ptrA + cont]
+        mov byte [ptrC + cont], dl
+        inc cont
+        jmp .cicloConcatA
+    .finCicloConcatA:
+        mov cont, 0
+    .cicloConcatB:
+        mov byte dl, [ptrB + cont]
+        cmp dl, 0
+        je .terminarConcatenacion
+        mov byte dl, [ptrB + cont]
+        lea r11, [lenA + cont]
+        mov [ptrC + r11], dl
+        inc cont
+        jmp .cicloConcatB
+    .terminarConcatenacion:
+        lea r11, [lenA + cont]
+        mov byte [ptrC + r11], 0
+    .limpiarMemoria:
+        %define ptrC r13
+        mov ptrC, rax
+        cmp ptrA, ptrB
+        je .borrarUno
+    .borrarAmbos:
+        mov rdi, ptrA
+        call strDelete
+        mov rdi, ptrB
+        call strDelete
+        jmp .retornar
+    .borrarUno:
+        mov rdi, ptrA
+        call strDelete
+        jmp .retornar
+    .retornar:
+        mov rax, ptrC
+        add rsp, 8
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        pop rbx
+        pop rbp
+        ret  
 
 
 strDelete:
@@ -454,9 +478,17 @@ listRemove:
     .eliminarPrimero:
     mov r9, [r15 + off_elem_next]
     mov rdi, [r15 + off_elem_data]
+    add rsp, 8
+    push r9
+    cmp rbx, 0
+    je .fd0prim
     call rbx
+
+    .fd0prim:
     mov rdi, r15
     call free
+    pop r9
+    sub rsp, 8
     mov [r12 + off_list_first], r9
     cmp r9, 0
     je .unicoElem
@@ -485,7 +517,11 @@ listRemove:
     mov [r9 + off_elem_next], r8
     mov [r8 + off_elem_prev], r9
     mov rdi, [r15 + off_elem_data]
+    cmp rbx, 0
+    je .fd0mid
     call rbx
+
+    .fd0mid:
     mov rdi, r15
     mov r15, [r15 + off_elem_next]
     call free
@@ -498,7 +534,11 @@ listRemove:
     mov r8, [r15 + off_elem_prev]
     mov qword [r8 + off_elem_next], 0
     mov rdi, [r15 + off_elem_data]
+    cmp rbx, 0
+    je .fd0ult
     call rbx
+
+    .fd0ult:
     mov rdi, r15
     call free
     mov [r12 + off_list_last], r8
@@ -538,7 +578,11 @@ listRemoveFirst:
     je .1Elem
     mov qword [r15 + off_elem_prev], 0
     mov rdi, [r13 + off_elem_data]
+    cmp r14, 0
+    je .fd0
     call r14
+
+    .fd0:
     mov rdi, r13
     call free
     jmp .fin
@@ -565,7 +609,7 @@ listRemoveLast:
     push r12
     push r13
     push r14
-    sub rsp, 8
+    push r15
     mov r12, rdi
     mov r14, rsi
 
@@ -573,22 +617,31 @@ listRemoveLast:
     cmp r13, 0
     je .fin
 
-    mov r8, [r13 + off_elem_prev]
-    mov [r12 + off_list_last], r8
-    cmp r8, 0
-    jne .twoOrMoreElem
-    mov [r12 + off_list_first], r8
+    mov r15, [r13 + off_elem_prev]
+    mov [r12 + off_list_last], r15
+    cmp r15, 0
+    je .1Elem
+    mov qword [r15 + off_elem_next], 0
+    mov rdi, [r13 + off_elem_data]
+    cmp r14, 0
+    je .fd0
+    call r14
 
-    .twoOrMoreElem:
+    .fd0:
+    mov rdi, r13
+    call free
+    jmp .fin
+
+    .1Elem:
     mov rdi, [r13 + off_elem_data]
     call r14
     mov rdi, r13
     call free
-    mov qword [r8 + off_elem_next], 0
+    mov qword [r12 + off_list_first], 0
 
     .fin:
         mov rax, r12
-        add rsp, 8
+        pop r15
         pop r14
         pop r13
         pop r12
@@ -610,8 +663,12 @@ listDelete:
     .ciclo:
         cmp r13, 0
         je .fin
+        cmp r14, 0
+        je .fd0
         mov rdi, [r13 + off_elem_data]
         call r14
+        
+        .fd0:
         mov rdi, r13
         mov r13, [r13 + off_elem_next]
         mov [r12 + off_list_first], r13
@@ -823,10 +880,15 @@ n3treeDeleteAux:
     mov rsi, r13
     call n3treeDeleteAux
 
-    mov rdi, [r12 + off_tree_elem_center]
-    call r13
+    cmp r13, 0
+    je .fd0
     mov rdi, [r12 + off_tree_elem_data]
     call r13
+
+    .fd0:
+    mov rdi, [r12 + off_tree_elem_center]
+    mov rsi, r13
+    call listDelete
     mov r14, [r12 + off_tree_elem_right]
     mov rdi, r12
     call free
@@ -1047,8 +1109,7 @@ nTableDelete:
     xor r14, r14
     xor r15, r15
     mov r14d, [rdi + off_table_size]
-    dec r14
-
+    
     .ciclo:
     cmp r14, 0
     je .fin
